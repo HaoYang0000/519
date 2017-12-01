@@ -1,27 +1,33 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
     <title>Marker Clustering</title>
     <style>
-      /* Always set the map height explicitly to define the size of the div
+        /* Always set the map height explicitly to define the size of the div
        * element that contains the map. */
-      #map {
-        height: 80%;
-      }
-      /* Optional: Makes the sample page fill the window. */
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
+
+        #map {
+            height: 80%;
+        }
+
+        /* Optional: Makes the sample page fill the window. */
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
     </style>
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-  </head>
-  <body>
+</head>
+
+<body>
 
     Data: <input type="file" name="file" id="file" src="./Data/000/Trajectory/20081023025304.plt" multiple="true">
 
@@ -29,102 +35,247 @@
     <p>To: <input type="text" id="datepicker1"></p>
     <div id="map"></div>
     <script>
-  $( function() {
-    $( "#datepicker" ).datepicker();
-    $( "#datepicker1" ).datepicker();
-  } );
-  </script>
+        $(function() {
+            $("#datepicker").datepicker();
+            $("#datepicker1").datepicker();
+        });
+    </script>
     <script>
+        var map, heatmap;
+        var threadhold = 500;
+        var counter = -1;
+        var overlay;
+        var locations = [];
+        var myInterval = setInterval(function() {
+            updateMap();
+        }, 2000);
 
-    var map;
-    var locations = [
-    ];
+        //Intialization 
+        function initMap() {
 
-      function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 8,
+                center: {
+                    lat: 39,
+                    lng: 116
+                },
+                mapTypeId: 'terrain'
+            });
 
-        map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 3,
-          center: {lat: 39, lng: 116}
-        });
+            var bounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(62.281819, -150.287132),
+                new google.maps.LatLng(62.400471, -150.005608));
 
-        // Create an array of alphabetical characters used to label the markers.
-        var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            // The photograph is courtesy of the U.S. Geological Survey.
+            // var srcImage = 'https://developers.google.com/maps/documentation/' +
+            //     'javascript/examples/full/images/talkeetna.png';
 
-        // Add some markers to the map.
-        // Note: The code uses the JavaScript Array.prototype.map() method to
-        // create an array of markers based on a given "locations" array.
-        // The map() method here has nothing to do with the Google Maps API.
-        console.log(locations);
-        var markers = locations.map(function(location, i) {
-          return new google.maps.Marker({
-            position: location,
-            label: labels[i % labels.length]
-          });
-        });
+            // The custom USGSOverlay object contains the USGS image,
+            // the bounds of the image, and a reference to the map.
+            //overlay = new USGSOverlay(bounds, srcImage, map);
 
-        // Add a marker clusterer to manage the markers.
-        var markerCluster = new MarkerClusterer(map, markers,
-            {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
-      }
-      
-      // Parser
-      
-      document.getElementById("file").onchange = function(){
 
-        for (var i = 0; i < this.files.length; i++) {
-          var file = this.files[i];
-      
-          var reader = new FileReader();
-          reader.onload = function(progressEvent){
-          // Entire file
-          // console.log(this.result);
+            // // Create an array of alphabetical characters used to label the markers.
+            // var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-          // By lines
-            var lines = this.result.split('\n');
-            for(var line = 6; line < lines.length; line++){
-              var lat = parseFloat(lines[line].split(",")[0]);
-              var lng = parseFloat(lines[line].split(",")[1]);
-              locations.push({lat,lng});
+            // // Add some markers to the map.
+            // // Note: The code uses the JavaScript Array.prototype.map() method to
+            // // create an array of markers based on a given "locations" array.
+            // // The map() method here has nothing to do with the Google Maps API.
+            // console.log(locations);
+            // var markers = locations.map(function(location, i) {
+            //   return new google.maps.Marker({
+            //     position: location,
+            //     label: labels[i % labels.length]
+            //   });
+            // });
+
+            // // Add a marker clusterer to manage the markers.
+            // var markerCluster = new MarkerClusterer(map, markers,
+            //     {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+        }
+
+
+        //Function to update map
+        function updateMap() {
+
+            if (counter < locations.length) {
+
+                // heatmap = new google.maps.visualization.HeatmapLayer({
+                //   data: getPoints(),
+                //   map: map
+                // });
+                console.log(counter);
+
+                for (var i = counter; i < counter + threadhold; i++) {
+                    //console.log(locations[city]);
+                    //Add the circle for this city to the map.
+                    var cityCircle = new google.maps.Circle({
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 1,
+                        strokeWeight: 1,
+                        fillColor: '#FF0000',
+                        fillOpacity: 1,
+                        map: map,
+                        center: locations[i],
+                        radius: 1
+
+                    });
+                }
+
+                if (locations.length - counter > threadhold) {
+                    counter = counter + threadhold;
+                } else {
+                    counter = locations.length;
+                }
+
+
             }
 
-          };
-            reader.readAsText(file); 
-            //console.log(locations);
-
         }
-        setTimeout(function(){ 
-          initMap();
-        }, 2000);
-        
+
+        //Return Google point format for heat map
+        function getPoints() {
+            var temp = [];
+            for (var location in locations) {
+                temp.push(new google.maps.LatLng(locations[location].lat, locations[location].lng));
+            }
+            return temp;
+        }
 
 
-        
-        
-    };
 
-    //   function readTextFile(file){
-    // var rawFile = new XMLHttpRequest();
-    // rawFile.open("GET", file, false);
-    // rawFile.onreadystatechange = function ()
-    // {
-    //     if(rawFile.readyState === 4)
-    //     {
-    //         if(rawFile.status === 200 || rawFile.status == 0)
-    //         {
-    //             var allText = rawFile.responseText;
-    //             return allText;
-    //         }
-    //     }
-    // }
-    // rawFile.send(null);
-    // }
 
-    
+        //Parser
+        document.getElementById("file").onchange = function() {
+
+            for (var i = 0; i < this.files.length; i++) {
+                var file = this.files[i];
+
+                var reader = new FileReader();
+                reader.onload = function(progressEvent) {
+                    // Entire file
+                    // console.log(this.result);
+
+                    // By lines
+                    var lines = this.result.split('\n');
+                    for (var line = 6; line < lines.length - 1; line++) {
+                        var lat = parseFloat(lines[line].split(",")[0]);
+                        var lng = parseFloat(lines[line].split(",")[1]);
+                        locations.push({
+                            lat,
+                            lng
+                        });
+                    }
+
+                };
+                reader.readAsText(file);
+                //console.log(locations);
+
+            }
+        };
+
+
+
+
+        // Initialize the map and the custom overlay.
+
+
+        // /** @constructor */
+        // function USGSOverlay(bounds, image, map) {
+
+        //   // Initialize all properties.
+        //   this.bounds_ = bounds;
+        //   this.image_ = image;
+        //   this.map_ = map;
+
+        //   // Define a property to hold the image's div. We'll
+        //   // actually create this div upon receipt of the onAdd()
+        //   // method so we'll leave it null for now.
+        //   this.div_ = null;
+
+        //   // Explicitly call setMap on this overlay.
+        //   this.setMap(map);
+        // }
+
+        // /**
+        //  * onAdd is called when the map's panes are ready and the overlay has been
+        //  * added to the map.
+        //  */
+        // USGSOverlay.prototype.onAdd = function() {
+
+        //   var div = document.createElement('div');
+        //   div.style.borderStyle = 'none';
+        //   div.style.borderWidth = '0px';
+        //   div.style.position = 'absolute';
+
+        //   // Create the img element and attach it to the div.
+        //   var img = document.createElement('img');
+        //   img.src = this.image_;
+        //   img.style.width = '100%';
+        //   img.style.height = '100%';
+        //   img.style.position = 'absolute';
+        //   div.appendChild(img);
+
+        //   this.div_ = div;
+
+        //   // Add the element to the "overlayLayer" pane.
+        //   var panes = this.getPanes();
+        //   panes.overlayLayer.appendChild(div);
+        // };
+
+        // USGSOverlay.prototype.draw = function() {
+
+        //   // We use the south-west and north-east
+        //   // coordinates of the overlay to peg it to the correct position and size.
+        //   // To do this, we need to retrieve the projection from the overlay.
+        //   var overlayProjection = this.getProjection();
+
+        //   // Retrieve the south-west and north-east coordinates of this overlay
+        //   // in LatLngs and convert them to pixel coordinates.
+        //   // We'll use these coordinates to resize the div.
+        //   var sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
+        //   var ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
+
+        //   // Resize the image's div to fit the indicated dimensions.
+        //   var div = this.div_;
+        //   div.style.left = sw.x + 'px';
+        //   div.style.top = ne.y + 'px';
+        //   div.style.width = (ne.x - sw.x) + 'px';
+        //   div.style.height = (sw.y - ne.y) + 'px';
+        // };
+
+        // // The onRemove() method will be called automatically from the API if
+        // // we ever set the overlay's map property to 'null'.
+        // USGSOverlay.prototype.onRemove = function() {
+        //   this.div_.parentNode.removeChild(this.div_);
+        //   this.div_ = null;
+        // };
+
+        // google.maps.event.addDomListener(window, 'load', initMap);
+
+
+        //   function readTextFile(file){
+        // var rawFile = new XMLHttpRequest();
+        // rawFile.open("GET", file, false);
+        // rawFile.onreadystatechange = function ()
+        // {
+        //     if(rawFile.readyState === 4)
+        //     {
+        //         if(rawFile.status === 200 || rawFile.status == 0)
+        //         {
+        //             var allText = rawFile.responseText;
+        //             return allText;
+        //         }
+        //     }
+        // }
+        // rawFile.send(null);
+        // }
     </script>
     <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js">
     </script>
-    <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCiuC3p_DDyrj_O3nbKxmQwfbwbY-zDrHk&callback=initMap">
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCiuC3p_DDyrj_O3nbKxmQwfbwbY-zDrHk&libraries=visualization&callback=initMap">
     </script>
-  </body>
+</body>
+
 </html>
